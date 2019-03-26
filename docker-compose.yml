@@ -1,0 +1,62 @@
+version: "2"
+services:
+  influxdb:
+    image: library/influxdb:alpine
+    container_name: influxdb
+    environment:
+      - INFLUXDB_DB=${INFLUXDB_DB}
+      - INFLUXDB_ADMIN_ENABLED=${INFLUXDB_ADMIN_ENABLED}
+      - INFLUXDB_ADMIN_USER=${INFLUXDB_ADMIN_USER}
+      - INFLUXDB_ADMIN_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
+      - INFLUXDB_USER=${INFLUXDB_USER}
+      - INFLUXDB_USER_PASSWORD=${INFLUXDB_USER_PASSWORD}
+      - INFLUXDB_READ_USER=${INFLUXDB_READ_USER}
+      - INFLUXDB_READ_USER_PASSWORD=${INFLUXDB_READ_USER_PASSWORD}
+      - INFLUXDB_WRITE_USER=${INFLUXDB_WRITE_USER}
+      - INFLUXDB_WRITE_USER_PASSWORD=${INFLUXDB_WRITE_USER_PASSWORD}
+    networks:
+      - tig
+    hostname: influxdb
+    ports:
+      - ${INFLUXDB_PORT}:8086
+    volumes:
+      - influxdb:/var/lib/influxdb/data
+      - ${INFLUXDB_CONF}:/etc/influxdb/influxdb.conf:ro
+    restart: always
+
+  telegraf:
+    image: petekaik/telegraf-ubnt
+    container_name: telegraf
+    networks:
+      - tig
+    hostname: telegraf
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${TELEGRAF_CONF}:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      - influxdb
+    restart: always
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    networks:
+      - tig
+    hostname: grafana
+    ports:
+      - ${GRAFANA_PORT}:3000
+    volumes:
+      - grafana:/var/lib/grafana
+    depends_on:
+      - influxdb
+    restart: always
+
+volumes:
+  influxdb:
+    driver: local
+  grafana:
+    driver: local
+
+networks:
+  tig:
+    driver: bridge
